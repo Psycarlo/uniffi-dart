@@ -363,7 +363,8 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                     switch(index) {
                         $(for (index, variant) in obj.variants().iter().enumerate() =>
                         case $(index + 1):
-                            return $(format!("{}{}", DartCodeOracle::class_name(variant.name()), dart_cls_name)).read(subview);
+                            final lifted = $(format!("{}{}", DartCodeOracle::class_name(variant.name()), dart_cls_name)).read(subview);
+                            return LiftRetVal<$dart_cls_name>(lifted.value, lifted.bytesRead - subview.offsetInBytes + 4);
                         )
                         default:  throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant");
                     }
@@ -378,7 +379,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                 }
 
                 static int write( $dart_cls_name value, Uint8List buf) {
-                    return value.write(buf);
+                    return value.write(buf) - buf.offsetInBytes;
                 }
             }
 

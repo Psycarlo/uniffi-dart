@@ -273,4 +273,17 @@ void main() {
       expect(true, true); // Expected to throw
     }
   });
+
+  test('decode sequence of records containing payload enums', () {
+    final items = listAsyncItems();
+    expect(items.length, 2);
+
+    final firstState = items[0].state as ReadyAsyncItemState;
+    expect(items[0].id, 1);
+    expect(firstState.timestampMs, 1111);
+
+    final secondState = items[1].state as PendingAsyncItemState;
+    expect(items[1].id, 2);
+    expect(secondState.reason, 'syncing');
+  });
 }

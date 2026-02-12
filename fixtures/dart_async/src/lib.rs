@@ -176,9 +176,37 @@ pub struct MyRecord {
     pub b: u32,
 }
 
+#[derive(uniffi::Enum)]
+pub enum AsyncItemState {
+    Ready { timestamp_ms: u64 },
+    Pending { reason: String },
+}
+
+#[derive(uniffi::Record)]
+pub struct AsyncItem {
+    pub id: u64,
+    pub state: AsyncItemState,
+}
+
 #[uniffi::export]
 pub async fn new_my_record(a: String, b: u32) -> MyRecord {
     MyRecord { a, b }
+}
+
+#[uniffi::export]
+pub fn list_async_items() -> Vec<AsyncItem> {
+    vec![
+        AsyncItem {
+            id: 1,
+            state: AsyncItemState::Ready { timestamp_ms: 1111 },
+        },
+        AsyncItem {
+            id: 2,
+            state: AsyncItemState::Pending {
+                reason: "syncing".to_string(),
+            },
+        },
+    ]
 }
 
 /// Non-blocking timer future used to test callback cancellation.
