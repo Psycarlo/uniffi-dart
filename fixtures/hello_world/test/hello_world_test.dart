@@ -7,7 +7,7 @@ void main() {
   });
 
   test('hello mikka', () {
-    expect(hello("mikka"), "hello mikka");
+    expect(hello(input: "mikka"), "hello mikka");
   });
 
   test("object test", () {
@@ -16,7 +16,7 @@ void main() {
   });
 
   test("record test", () {
-    World world = newWorldWithName("sarisa");
+    World world = newWorldWithName(name: "sarisa");
     final state = world.state();
     expect(state.name, "sarisa");
     expect(state.inhabitants, 0);
@@ -33,13 +33,13 @@ void main() {
   });
 
   test("stringed world test", () {
-    var world = newWorldWithName("sari");
+    var world = newWorldWithName(name: "sari");
     expect(world.name(), "sari");
-    expect(world.prefixedName("mister"), "mister sari");
-    expect(world.prefixedName(null), null);
-    world = world.setName("new name");
+    expect(world.prefixedName(inp: "mister"), "mister sari");
+    expect(world.prefixedName(inp: null), null);
+    world = world.setName(inp: "new name");
     expect(world.name(), "new name");
-    world = world.setName(null);
+    world = world.setName(inp: null);
     expect(world.name(), null);
   });
 }

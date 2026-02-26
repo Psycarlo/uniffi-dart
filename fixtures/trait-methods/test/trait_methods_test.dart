@@ -7,7 +7,7 @@ void main() {
       // This test will fail until trait method support is implemented
       // Expected: TraitMethods toString() should return "TraitMethods(yo)"
 
-      final m = TraitMethods("yo");
+      final m = TraitMethods(name: "yo");
       expect(m.toString(), equals("TraitMethods(yo)"));
     });
 
@@ -15,7 +15,7 @@ void main() {
       // This test will fail until trait method support is implemented
       // Expected: TraitMethods debug representation should return 'TraitMethods { val: "yo" }'
 
-      final m = TraitMethods("yo");
+      final m = TraitMethods(name: "yo");
       expect(m.debugString(), equals('TraitMethods { val: "yo" }'));
     });
 
@@ -23,9 +23,9 @@ void main() {
       // This test will fail until trait method support is implemented
       // Expected: TraitMethods objects should be equal if they have the same value
 
-      final m1 = TraitMethods("yo");
-      final m2 = TraitMethods("yo");
-      final m3 = TraitMethods("yoyo");
+      final m1 = TraitMethods(name: "yo");
+      final m2 = TraitMethods(name: "yo");
+      final m3 = TraitMethods(name: "yoyo");
 
       expect(m1, equals(m2));
       expect(m1, isNot(equals(m3)));
@@ -36,7 +36,7 @@ void main() {
       // Expected: TraitMethods objects should be hashable and usable as map keys
 
       final map = <TraitMethods, String>{};
-      final m = TraitMethods("m");
+      final m = TraitMethods(name: "m");
       map[m] = "m";
       expect(map.containsKey(m), isTrue);
     });
@@ -47,7 +47,7 @@ void main() {
       // This test will fail until proc-macro support is implemented
       // Expected: ProcTraitMethods should behave like TraitMethods but using proc-macros
 
-      final m = ProcTraitMethods("yo");
+      final m = ProcTraitMethods(val: "yo");
       expect(m.toString(), equals("ProcTraitMethods(yo)"));
       expect(m.debugString(), equals('ProcTraitMethods { val: "yo" }'));
     });

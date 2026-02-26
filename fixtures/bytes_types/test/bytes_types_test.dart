@@ -7,7 +7,7 @@ void main() {
   group('Basic Bytes Functions', () {
     test('take_bytes returns same data', () {
       final input = [1, 2, 3, 4, 5];
-      final result = takeBytes(Uint8List.fromList(input));
+      final result = takeBytes(v: Uint8List.fromList(input));
       expect(result, equals(input));
     });
 
