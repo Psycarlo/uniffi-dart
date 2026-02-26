@@ -9,7 +9,11 @@ use super::oracle::AsCodeType;
 use super::render::TypeHelperRenderer;
 
 pub fn generate_function(func: &Function, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-    let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),));
+    let args = if func.arguments().is_empty() {
+        quote!()
+    } else {
+        quote!({$(for arg in &func.arguments() => required $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),)})
+    };
 
     let (ret, lifter) = if let Some(ret) = func.return_type() {
         (

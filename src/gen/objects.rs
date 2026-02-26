@@ -137,9 +137,13 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
             quote!(null)
         };
 
-        let dart_params = quote!($(for arg in constructor.arguments() =>
-            $(DartCodeOracle::dart_type_label(Some(&arg.as_type()))) $(DartCodeOracle::var_name(arg.name())),
-        ));
+        let dart_params = if constructor.arguments().is_empty() {
+            quote!()
+        } else {
+            quote!({$(for arg in constructor.arguments() =>
+                required $(DartCodeOracle::dart_type_label(Some(&arg.as_type()))) $(DartCodeOracle::var_name(arg.name())),
+            )})
+        };
 
         let ffi_call_args = quote!($(for arg in constructor.arguments() =>
             $(DartCodeOracle::lower_arg_with_callback_handling(arg)),)
@@ -319,7 +323,11 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
 #[allow(unused_variables)]
 pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
     // if func.takes_self_by_arc() {} // TODO: Do something about this condition
-    let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),));
+    let args = if func.arguments().is_empty() {
+        quote!()
+    } else {
+        quote!({$(for arg in &func.arguments() => required $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),)})
+    };
 
     let (ret, lifter) = if let Some(ret) = func.return_type() {
         (
@@ -646,20 +654,12 @@ fn generate_interface_method(
     method: &Method,
     type_helper: &dyn TypeHelperRenderer,
 ) -> dart::Tokens {
-    let arg_tokens: Vec<dart::Tokens> = method
-        .arguments()
-        .into_iter()
-        .map(|arg| {
-            let ty = arg.as_renderable().render_type(&arg.as_type(), type_helper);
-            let name = DartCodeOracle::var_name(arg.name());
-            quote!($ty $name)
-        })
-        .collect();
-
-    let params = if arg_tokens.is_empty() {
+    let params = if method.arguments().is_empty() {
         quote!()
     } else {
-        quote!($(for arg in arg_tokens.iter() join (, ) => $arg))
+        quote!({$(for arg in method.arguments() =>
+            required $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),
+        )})
     };
     let ret_type = method_return_type_tokens(method, type_helper);
     let method_name = DartCodeOracle::fn_name(method.name());
