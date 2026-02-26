@@ -8,50 +8,133 @@ use crate::gen::render::{Renderable, TypeHelperRenderer};
 use crate::gen::CodeType;
 use genco::prelude::*;
 use paste::paste;
-use uniffi_bindgen::pipeline::general::nodes::{Literal, Radix, Type, TypeNode};
+use uniffi_bindgen::interface::{
+    DefaultValue as InterfaceDefaultValue, Literal as InterfaceLiteral, Radix as InterfaceRadix,
+    Type as InterfaceType,
+};
+use uniffi_bindgen::pipeline::general::nodes::{
+    Literal as PipelineLiteral, Radix as PipelineRadix, Type as PipelineType, TypeNode,
+};
 
 pub use boolean::BooleanCodeType;
 pub use duration::DurationCodeType;
 pub use string::StringCodeType;
 
-fn render_literal(literal: &Literal) -> String {
+pub(crate) fn escape_dart_string(value: &str) -> String {
+    value
+        .replace('\\', "\\\\")
+        .replace('\'', "\\'")
+        .replace('\n', "\\n")
+        .replace('\r', "\\r")
+        .replace('\t', "\\t")
+}
+
+fn render_literal(literal: &PipelineLiteral) -> String {
     fn typed_number(type_node: &TypeNode, num_str: String) -> String {
         match &type_node.ty {
-            Type::Int8
-            | Type::UInt8
-            | Type::Int16
-            | Type::UInt16
-            | Type::Int32
-            | Type::UInt32
-            | Type::UInt64
-            | Type::Float32
-            | Type::Float64
-            | Type::Duration => num_str,
+            PipelineType::Int8
+            | PipelineType::UInt8
+            | PipelineType::Int16
+            | PipelineType::UInt16
+            | PipelineType::Int32
+            | PipelineType::UInt32
+            | PipelineType::UInt64
+            | PipelineType::Float32
+            | PipelineType::Float64
+            | PipelineType::Duration => num_str,
             _ => panic!("Unexpected literal: {num_str} is not a number"),
         }
     }
 
     match literal {
-        Literal::Boolean(v) => format!("{v}"),
-        Literal::String(s) => format!("'{s}'"),
-        Literal::Int(i, radix, type_node) => typed_number(
+        PipelineLiteral::Boolean(v) => format!("{v}"),
+        PipelineLiteral::String(s) => format!("'{}'", escape_dart_string(s)),
+        PipelineLiteral::Int(i, radix, type_node) => typed_number(
             type_node,
             match radix {
-                Radix::Octal => format!("{i:#x}"),
-                Radix::Decimal => format!("{i}"),
-                Radix::Hexadecimal => format!("{i:#x}"),
+                PipelineRadix::Octal => format!("{i:#x}"),
+                PipelineRadix::Decimal => format!("{i}"),
+                PipelineRadix::Hexadecimal => format!("{i:#x}"),
             },
         ),
-        Literal::UInt(i, radix, type_node) => typed_number(
+        PipelineLiteral::UInt(i, radix, type_node) => typed_number(
             type_node,
             match radix {
-                Radix::Octal => format!("{i:#x}"),
-                Radix::Decimal => format!("{i}"),
-                Radix::Hexadecimal => format!("{i:#x}"),
+                PipelineRadix::Octal => format!("{i:#x}"),
+                PipelineRadix::Decimal => format!("{i}"),
+                PipelineRadix::Hexadecimal => format!("{i:#x}"),
             },
         ),
-        Literal::Float(string, type_node) => typed_number(type_node, string.clone()),
+        PipelineLiteral::Float(string, type_node) => typed_number(type_node, string.clone()),
         _ => unreachable!("Literal"),
+    }
+}
+
+fn default_for_interface_type(ty: &InterfaceType) -> Option<String> {
+    match ty {
+        InterfaceType::Boolean => Some("false".to_string()),
+        InterfaceType::String => Some("''".to_string()),
+        InterfaceType::Int8
+        | InterfaceType::Int16
+        | InterfaceType::Int32
+        | InterfaceType::Int64
+        | InterfaceType::UInt8
+        | InterfaceType::UInt16
+        | InterfaceType::UInt32
+        | InterfaceType::UInt64 => Some("0".to_string()),
+        InterfaceType::Float32 | InterfaceType::Float64 => Some("0.0".to_string()),
+        InterfaceType::Duration => Some("Duration.zero".to_string()),
+        InterfaceType::Optional { .. } => Some("null".to_string()),
+        InterfaceType::Sequence { .. } => Some("const []".to_string()),
+        InterfaceType::Map { .. } => Some("const {}".to_string()),
+        _ => None,
+    }
+}
+
+fn render_interface_literal<F>(
+    literal: &InterfaceLiteral,
+    field_type: &InterfaceType,
+    enum_variant_renderer: F,
+) -> Option<String>
+where
+    F: Fn(&InterfaceType, &str) -> Option<String> + Copy,
+{
+    match literal {
+        InterfaceLiteral::Boolean(value) => Some(value.to_string()),
+        InterfaceLiteral::String(value) => Some(format!("'{}'", escape_dart_string(value))),
+        InterfaceLiteral::Int(value, radix, _) => Some(match radix {
+            InterfaceRadix::Decimal => format!("{value}"),
+            InterfaceRadix::Octal | InterfaceRadix::Hexadecimal => format!("{value:#x}"),
+        }),
+        InterfaceLiteral::UInt(value, radix, _) => Some(match radix {
+            InterfaceRadix::Decimal => format!("{value}"),
+            InterfaceRadix::Octal | InterfaceRadix::Hexadecimal => format!("{value:#x}"),
+        }),
+        InterfaceLiteral::Float(value, _) => Some(value.clone()),
+        InterfaceLiteral::Enum(variant, ty) => enum_variant_renderer(ty, variant)
+            .or_else(|| enum_variant_renderer(field_type, variant)),
+        InterfaceLiteral::EmptySequence => Some("const []".to_string()),
+        InterfaceLiteral::EmptyMap => Some("const {}".to_string()),
+        InterfaceLiteral::None => Some("null".to_string()),
+        InterfaceLiteral::Some { inner } => {
+            render_interface_default_value(inner, field_type, enum_variant_renderer)
+        }
+    }
+}
+
+pub(crate) fn render_interface_default_value<F>(
+    default: &InterfaceDefaultValue,
+    field_type: &InterfaceType,
+    enum_variant_renderer: F,
+) -> Option<String>
+where
+    F: Fn(&InterfaceType, &str) -> Option<String> + Copy,
+{
+    match default {
+        InterfaceDefaultValue::Default => default_for_interface_type(field_type),
+        InterfaceDefaultValue::Literal(literal) => {
+            render_interface_literal(literal, field_type, enum_variant_renderer)
+        }
     }
 }
 

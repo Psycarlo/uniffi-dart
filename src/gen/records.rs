@@ -1,10 +1,11 @@
 use super::oracle::{AsCodeType, DartCodeOracle};
+use super::primitives::render_interface_default_value;
 use super::render::{Renderable, TypeHelperRenderer};
 use super::types::generate_type;
 use crate::gen::CodeType;
 use genco::prelude::*;
-use uniffi_bindgen::interface::{AsType, Record};
-use uniffi_bindgen::pipeline::general::nodes::Literal;
+use uniffi_bindgen::interface::{AsType, Record, Type};
+use uniffi_bindgen::pipeline::general::nodes::Literal as PipelineLiteral;
 
 #[derive(Debug)]
 pub struct RecordCodeType {
@@ -29,8 +30,16 @@ impl CodeType for RecordCodeType {
         self.id.to_string()
     }
 
-    fn literal(&self, _literal: &Literal) -> String {
+    fn literal(&self, _literal: &PipelineLiteral) -> String {
         todo!("literal not implemented for RecordCodeType");
+    }
+}
+
+fn enum_name_from_type(ty: &Type) -> Option<String> {
+    match ty {
+        Type::Enum { name, .. } => Some(DartCodeOracle::class_name(name)),
+        Type::Optional { inner_type } => enum_name_from_type(inner_type),
+        _ => None,
     }
 }
 
@@ -49,6 +58,38 @@ impl Renderable for RecordCodeType {
 pub fn generate_record(obj: &Record, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
     let cls_name = &DartCodeOracle::class_name(obj.name());
     let ffi_conv_name = &DartCodeOracle::class_name(&obj.as_codetype().ffi_converter_name());
+    let constructor_params: Vec<dart::Tokens> = obj
+        .fields()
+        .iter()
+        .map(|field| {
+            let name = DartCodeOracle::var_name(field.name());
+            if let Some(default_value) = field.default_value() {
+                if let Some(default_expr) = render_interface_default_value(
+                    default_value,
+                    &field.as_type(),
+                    |ty, variant| {
+                        let enum_name = enum_name_from_type(ty)?;
+                        let variant_name = DartCodeOracle::enum_variant_name(variant);
+                        Some(format!("{enum_name}.{variant_name}"))
+                    },
+                ) {
+                    quote!(this.$name = $(default_expr))
+                } else {
+                    // Fallback to required when a default is present but cannot be rendered safely.
+                    quote!(required this.$name)
+                }
+            } else {
+                quote!(required this.$name)
+            }
+        })
+        .collect();
+
+    let constructor = if obj.fields().is_empty() {
+        quote!($(cls_name)();)
+    } else {
+        quote!($(cls_name)({$(for param in constructor_params => $param, )});)
+    };
+
     for f in obj.fields() {
         type_helper.include_once_check(&f.as_codetype().canonical_name(), &f.as_type());
     }
@@ -56,7 +97,7 @@ pub fn generate_record(obj: &Record, type_helper: &dyn TypeHelperRenderer) -> da
         class $cls_name {
             $(for f in obj.fields() => final $(generate_type(&f.as_type())) $(DartCodeOracle::var_name(f.name()));)
 
-            $(cls_name)($(for f in obj.fields() => this.$(DartCodeOracle::var_name(f.name())), ));
+            $constructor
         }
 
         class $ffi_conv_name {
@@ -73,7 +114,7 @@ pub fn generate_record(obj: &Record, type_helper: &dyn TypeHelperRenderer) -> da
                     new_offset += $(DartCodeOracle::var_name(f.name()))_lifted.bytesRead;
                 )
                 return LiftRetVal($(cls_name)(
-                    $(for f in obj.fields() => $(DartCodeOracle::var_name(f.name())),)
+                    $(for f in obj.fields() => $(DartCodeOracle::var_name(f.name())): $(DartCodeOracle::var_name(f.name())),)
                 ), new_offset - buf.offsetInBytes);
             }
 
