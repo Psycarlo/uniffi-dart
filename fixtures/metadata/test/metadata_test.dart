@@ -13,12 +13,12 @@ void main() {
       expect(metadataStruct.features, contains('testing'));
     });
 
-        test('metadata object functionality', () {
-      final obj = MetadataObject('test-object');
+    test('metadata object functionality', () {
+      final obj = MetadataObject(name: 'test-object');
       expect(obj.getName(), equals('test-object'));
       expect(obj.getVersion(), equals(0));
 
-      obj.setVersion(42);
+      obj.setVersion(version: 42);
       // Note: In real implementation, this should update the version
     });
 

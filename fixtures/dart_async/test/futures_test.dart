@@ -13,7 +13,7 @@ void main() {
   ensureInitialized();
 
   test('greet', () async {
-    final result = greet("Somebody");
+    final result = greet(who: "Somebody");
     expect(result, "Hello, Somebody");
   });
 
@@ -36,7 +36,7 @@ void main() {
 
   test('sleep', () async {
     final time = await measureTime(() async {
-      await sleep(200);
+      await sleep(ms: 200);
     });
 
     expect(time.inMilliseconds > 200 && time.inMilliseconds < 300, true);
@@ -44,8 +44,8 @@ void main() {
 
   test('sequential_future', () async {
     final time = await measureTime(() async {
-      final resultAlice = await sayAfter(100, 'Alice');
-      final resultBob = await sayAfter(200, 'Bob');
+      final resultAlice = await sayAfter(ms: 100, who: 'Alice');
+      final resultBob = await sayAfter(ms: 200, who: 'Bob');
       expect(resultAlice, 'Hello, Alice!');
       expect(resultBob, 'Hello, Bob!');
     });
@@ -55,8 +55,8 @@ void main() {
   test('concurrent_future', () async {
     final time = await measureTime(() async {
       final results = await Future.wait([
-        sayAfter(100, 'Alice'),
-        sayAfter(200, 'Bob'),
+        sayAfter(ms: 100, who: 'Alice'),
+        sayAfter(ms: 200, who: 'Bob'),
       ]);
 
       expect(results[0], 'Hello, Alice!');
@@ -68,7 +68,7 @@ void main() {
 
   test('with_tokio_runtime', () async {
     final time = await measureTime(() async {
-      final resultAlice = await sayAfterWithTokio(200, 'Alice');
+      final resultAlice = await sayAfterWithTokio(ms: 200, who: 'Alice');
       expect(resultAlice, 'Hello, Alice (with Tokio)!');
     });
     expect(time.inMilliseconds > 200 && time.inMilliseconds < 300, true);
@@ -77,7 +77,7 @@ void main() {
   test('fallible_function_and_method', () async {
     final time1 = await measureTime(() async {
       try {
-        await fallibleMe(false);
+        await fallibleMe(doFail: false);
         expect(true, true);
       } catch (exception) {
         expect(false, true); // should never be reached
@@ -87,7 +87,7 @@ void main() {
 
     final time2 = await measureTime(() async {
       try {
-        await fallibleMe(true);
+        await fallibleMe(doFail: true);
         expect(false, true); // should never be reached
       } catch (exception) {
         expect(true, true);
@@ -98,7 +98,7 @@ void main() {
 
   test('record', () async {
     final time = await measureTime(() async {
-      final result = await newMyRecord('foo', 42);
+      final result = await newMyRecord(a: 'foo', b: 42);
       expect(result.a, 'foo');
       expect(result.b, 42);
     });
@@ -109,11 +109,11 @@ void main() {
 
   test('broken_sleep', () async {
     final time = await measureTime(() async {
-      await brokenSleep(100, 0); // calls the waker twice immediately
-      await sleep(100); // wait for possible failure
+      await brokenSleep(ms: 100, failAfter: 0); // calls the waker twice immediately
+      await sleep(ms: 100); // wait for possible failure
 
-      await brokenSleep(100, 100); // calls the waker a second time after 1s
-      await sleep(200); // wait for possible failure
+      await brokenSleep(ms: 100, failAfter: 100); // calls the waker a second time after 1s
+      await sleep(ms: 200); // wait for possible failure
     });
     expect(time.inMilliseconds >= 400 && time.inMilliseconds <= 600, true);
   });
@@ -147,7 +147,7 @@ void main() {
 
     // Test async method with timing
     final time = await measureTime(() async {
-      final result = await megaphone.sayAfter(100, 'Alice');
+      final result = await megaphone.sayAfter(ms: 100, who: 'Alice');
       expect(result, 'HELLO, ALICE!');
     });
     expect(time.inMilliseconds >= 100 && time.inMilliseconds < 200, true);
@@ -165,7 +165,7 @@ void main() {
 
     // Test sync method (should be immediate)
     final time = await measureTime(() async {
-      final result = megaphone.sayNow('Bob');
+      final result = megaphone.sayNow(who: 'Bob');
       expect(result, 'HELLO, BOB!');
     });
     expect(time.inMilliseconds < 50, true);
@@ -175,7 +175,7 @@ void main() {
     final megaphone = await Megaphone.new_();
 
     final time = await measureTime(() async {
-      final result = await megaphone.sayAfterWithTokio(100, 'Charlie');
+      final result = await megaphone.sayAfterWithTokio(ms: 100, who: 'Charlie');
       expect(result, 'HELLO, CHARLIE (WITH TOKIO)!');
     });
     expect(time.inMilliseconds >= 100 && time.inMilliseconds < 200, true);
@@ -185,12 +185,12 @@ void main() {
     final megaphone = await Megaphone.new_();
 
     // Test success case
-    final result = await megaphone.fallibleMe(false);
+    final result = await megaphone.fallibleMe(doFail: false);
     expect(result, 42);
 
     // Test failure case
     try {
-      await megaphone.fallibleMe(true);
+      await megaphone.fallibleMe(doFail: true);
       expect(false, true); // Should never reach here
     } catch (e) {
       expect(true, true); // Expected to throw
@@ -217,7 +217,7 @@ void main() {
     final udlMegaphone = await UdlMegaphone.new_();
 
     final time = await measureTime(() async {
-      final result = await udlMegaphone.sayAfter(100, 'Dave');
+      final result = await udlMegaphone.sayAfter(ms: 100, who: 'Dave');
       expect(result, 'HELLO, DAVE (FROM UDL MEGAPHONE)!');
     });
     expect(time.inMilliseconds >= 100 && time.inMilliseconds < 200, true);
@@ -233,10 +233,10 @@ void main() {
     expect(asyncMegaphone, isNotNull);
 
     // Test conditional async object creation
-    final maybeMegaphone1 = await asyncMaybeNewMegaphone(true);
+    final maybeMegaphone1 = await asyncMaybeNewMegaphone(y: true);
     expect(maybeMegaphone1, isNotNull);
 
-    final maybeMegaphone2 = await asyncMaybeNewMegaphone(false);
+    final maybeMegaphone2 = await asyncMaybeNewMegaphone(y: false);
     expect(maybeMegaphone2, isNull);
   });
 
@@ -244,7 +244,7 @@ void main() {
     final megaphone = await Megaphone.new_();
 
     final time = await measureTime(() async {
-      final result = await sayAfterWithMegaphone(megaphone, 100, 'Eve');
+      final result = await sayAfterWithMegaphone(megaphone: megaphone, ms: 100, who: 'Eve');
       expect(result, 'HELLO, EVE!');
     });
     expect(time.inMilliseconds >= 100 && time.inMilliseconds < 200, true);
@@ -252,12 +252,12 @@ void main() {
 
   test('fallible_struct_creation', () async {
     // Test success case
-    final successResult = await fallibleStruct(false);
+    final successResult = await fallibleStruct(doFail: false);
     expect(successResult, isNotNull);
 
     // Test failure case
     try {
-      await fallibleStruct(true);
+      await fallibleStruct(doFail: true);
       expect(false, true); // Should never reach here
     } catch (e) {
       expect(true, true); // Expected to throw
