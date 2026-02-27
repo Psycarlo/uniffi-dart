@@ -51,6 +51,28 @@ Our comprehensive fixture suite has identified 5 critical blocking features:
 4. **Trait method support** - Advanced trait functionality
 5. **BigInt support** - Large integer boundary handling
 
+## Versioning
+
+uniffi-dart is versioned independently from uniffi-rs. We follow the
+[SemVer rules from the Cargo Book](https://doc.rust-lang.org/cargo/reference/semver.html)
+where versions are compatible when their left-most non-zero component
+matches. A breaking change is any modification to the generated Dart
+bindings that requires consumers to update their code.
+
+Because the project is still young, the major version is 0 and most
+updates bump the minor version.
+
+To keep binding generators in sync, uniffi-dart targets a specific
+uniffi-rs release. If you use multiple external binding generators, pick
+versions that target the same uniffi-rs version.
+
+Tags follow the format `vX.Y.Z+vA.B.C`, where `X.Y.Z` is the
+uniffi-dart version and `A.B.C` is the targeted uniffi-rs version.
+
+| uniffi-dart version | uniffi-rs version |
+|---------------------|-------------------|
+| v0.1.0              | v0.30.0           |
+
 ## License & Credits
 
 The code is released under MIT License. See the LICENSE file in the repository root for details.
