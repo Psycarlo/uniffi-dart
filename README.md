@@ -4,6 +4,15 @@ Dart frontend for UniFFI bindings
 
 ![License: MIT](https://img.shields.io/github/license/acterglobal/uniffi-dart?style=flat-square) ![Status: experimental](https://img.shields.io/badge/status-experimental-red?style=flat-square)
 
+## Installation
+
+Add uniffi-dart as a dependency in your `Cargo.toml`:
+
+```toml
+[dependencies]
+uniffi-dart = "0.1.0+v0.30.0"
+```
+
 ## Testing & Fixtures
 
 uniffi-dart includes a **comprehensive test suite** with 30 fixtures covering all major UniFFI functionality:
