@@ -1,11 +1,23 @@
 use uniffi;
 
+pub struct Item {
+    pub name: String,
+    pub value: u64,
+}
+
+pub struct Tag {
+    pub id: u32,
+    pub label: String,
+}
+
 trait ForeignGetters {
     fn get_bool(&self, v: bool, argument_two: bool) -> Result<bool, SimpleError>;
     fn get_string(&self, v: String, arg2: bool) -> Result<String, SimpleError>;
     fn get_option(&self, v: Option<String>, arg2: bool) -> Result<Option<String>, ComplexError>;
     fn get_list(&self, v: Vec<i32>, arg2: bool) -> Result<Vec<i32>, SimpleError>;
     fn get_nothing(&self, v: String) -> Result<(), SimpleError>;
+    fn get_items(&self, v: Vec<Item>) -> Vec<Item>;
+    fn get_tag(&self, v: Option<Tag>) -> Option<Tag>;
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -87,6 +99,14 @@ impl RustGetters {
 
     fn get_nothing(&self, callback: Box<dyn ForeignGetters>, v: String) -> Result<(), SimpleError> {
         callback.get_nothing(v)
+    }
+
+    fn get_items(&self, callback: Box<dyn ForeignGetters>, v: Vec<Item>) -> Vec<Item> {
+        callback.get_items(v)
+    }
+
+    fn get_tag(&self, callback: Box<dyn ForeignGetters>, v: Option<Tag>) -> Option<Tag> {
+        callback.get_tag(v)
     }
 }
 

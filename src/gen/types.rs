@@ -110,12 +110,25 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             )
         );
 
-        // Ensure callback interfaces are registered for helper generation
+        // Ensure callback interfaces and their method parameter/return types
+        // are registered for helper generation. We must do this before taking
+        // the snapshot in get_include_names(), so that compound types like
+        // Sequence<Record> or Optional<Record> that only appear in callback
+        // interface signatures get their FfiConverter classes generated.
         for callback in self.ci.callback_interface_definitions() {
             self.include_once_check(
                 &callback.as_type().as_codetype().canonical_name(),
                 &callback.as_type(),
             );
+            // Walk callback method signatures to register compound types
+            for method in callback.methods() {
+                for arg in method.arguments() {
+                    arg.as_renderable().render_type(&arg.as_type(), self);
+                }
+                if let Some(ret) = method.return_type() {
+                    ret.as_renderable().render_type(ret, self);
+                }
+            }
         }
 
         // Let's include the string converter

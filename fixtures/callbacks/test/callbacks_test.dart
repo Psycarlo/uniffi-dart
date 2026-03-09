@@ -41,6 +41,12 @@ class DartGetters extends ForeignGetters {
       throw SimpleException.unexpectedError;
     }
   }
+
+  @override
+  List<Item> getItems(List<Item> v) => v;
+
+  @override
+  Tag? getTag(Tag? v) => v;
 }
 
 class StoredDartStringifier extends StoredForeignStringifier {
@@ -116,6 +122,31 @@ void main() {
   test('getNothing should not throw with normal argument', () {
     // Should not throw
     rustGetters.getNothing(callback, "1234567890123");
+  });
+
+  test('roundtrip getItems (sequence<Record>) through callback', () {
+    final items = [
+      Item(name: 'foo', value: 100),
+      Item(name: 'bar', value: 200),
+    ];
+    final result = rustGetters.getItems(callback, items);
+    expect(result.length, equals(2));
+    expect(result[0].name, equals('foo'));
+    expect(result[0].value, equals(100));
+    expect(result[1].name, equals('bar'));
+    expect(result[1].value, equals(200));
+  });
+
+  test('roundtrip getTag (Optional<Record>) through callback', () {
+    final tag = Tag(id: 42, label: 'test');
+    final result = rustGetters.getTag(callback, tag);
+    expect(result, isNotNull);
+    expect(result!.id, equals(42));
+    expect(result.label, equals('test'));
+
+    // Also test with null
+    final nullResult = rustGetters.getTag(callback, null);
+    expect(nullResult, isNull);
   });
 
   // test('getString throws SimpleException.BadArgument', () {
