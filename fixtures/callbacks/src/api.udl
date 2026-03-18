@@ -1,5 +1,17 @@
 namespace callbacks { };
 
+// Record types used only in callback interface compound positions
+// (sequence<Record> and Record?) to test FfiConverter generation.
+dictionary Item {
+  string name;
+  u64 value;
+};
+
+dictionary Tag {
+  u32 id;
+  string label;
+};
+
 [Error]
 enum SimpleError {
   "BadArgument",
@@ -27,6 +39,9 @@ callback interface ForeignGetters {
   sequence<i32> get_list(sequence<i32> v, boolean arg2);
   [Throws=SimpleError]
   void get_nothing(string v);
+  // Test compound types wrapping records in callback signatures
+  sequence<Item> get_items(sequence<Item> v);
+  Tag? get_tag(Tag? v);
 };
 
 /// These objects are implemented in Rust, and call out to `ForeignGetters`
@@ -45,6 +60,9 @@ interface RustGetters {
   string? get_string_optional_callback(ForeignGetters? callback, string v, boolean arg2);
   [Throws=SimpleError]
   void get_nothing(ForeignGetters callback, string v);
+  // Test compound types wrapping records
+  sequence<Item> get_items(ForeignGetters callback, sequence<Item> v);
+  Tag? get_tag(ForeignGetters callback, Tag? v);
 };
 
 /// These objects are implemented by the foreign language and passed
