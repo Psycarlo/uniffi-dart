@@ -11,14 +11,12 @@ use genco::fmt;
 use genco::prelude::*;
 use serde::{Deserialize, Serialize};
 use toml;
-#[allow(deprecated)]
 use uniffi_bindgen::BindgenCrateConfigSupplier;
 use uniffi_bindgen::Component;
 // use uniffi_bindgen::MergeWith;
 use self::render::Renderer;
 use self::types::TypeHelpersRenderer;
 use crate::gen::oracle::DartCodeOracle;
-#[allow(deprecated)]
 use uniffi_bindgen::{BindingGenerator, ComponentInterface};
 
 mod callback_interface;
